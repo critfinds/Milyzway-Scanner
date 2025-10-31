@@ -1,0 +1,6 @@
+brand.base.org
+coinbase.com
+login.coinbase.com
+accounts.coinbase.com
+pro.coinbase.com
+base.org
