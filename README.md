@@ -1,5 +1,5 @@
 # Milyzway-Scanner
-![milyzway-preview.png](/mnt/c/Users/black/OneDrive/Documents/redteamproject/modules/vulnerability-scanning/Milyzway-Scanner/milyzway-preview.png)
+![milyzway-preview.png](/milyzway-preview.png)
 A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
 
 ## Features
