@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: Milyzway-Scanner
+Version: 0.1.0
+Summary: Red team vulnerability scanning module
+Author-email: critfinds <jsbtc1@proton.me>
+License-File: LICENSE
+Dynamic: license-file

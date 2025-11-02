@@ -1,0 +1,18 @@
+# config.yml
+targets:
+  - "https://example.com"
+
+enabled_plugins:
+  - cors
+  - oauth
+  - ssrf
+  - solidity_tools
+  - csrf
+  - rce
+  - command_injection
+
+concurrency: 2
+rate_limit: 5
+timeout: 20
+output_path: "./results/scan_results.json"
+safe_mode: true

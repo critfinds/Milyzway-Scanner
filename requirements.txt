@@ -1,7 +1,6 @@
-aiohttp>=3.8
-aiolimiter>=1.0
-PyYAML>=6.0
-uvloop; platform_system != "Windows"
-yarl>=1.8
-python-dotenv>=1.0
-tqdm
+aiohttp
+rich
+PyYAML
+mythril
+slither-analyzer
+beautifulsoup4

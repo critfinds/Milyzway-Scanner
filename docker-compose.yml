@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  vulnscanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vulnscanner
+    # Mount targets, config and results so you can edit locally and persist output
+    volumes:
+      - ./examples:/opt/vulnscanner/examples:ro
+      - ./scan_results:/opt/vulnscanner/results:rw
+      - ./config.yml:/opt/vulnscanner/config.yml:ro
+      - ./scanner:/opt/vulnscanner/scanner:ro
+    environment:
+      # Recommended: override these in an .env file or the host environment for production
+      - PYTHONUNBUFFERED=1
+      - TZ=UTC
+      # Safety defaults - change in config.yml instead of here when possible
+      - VULNSCANNER_SAFE_MODE=1
+    # Command runs the scanner and outputs results to mounted results folder
+    command: >
+      sh -c "mkdir -p /opt/vulnscanner/results && \
+      python -m scanner.app --config /opt/vulnscanner/config.yml --targets /opt/vulnscanner/examples/targets.txt && \
+      echo 'Scan finished; results saved to /opt/vulnscanner/results/scan_results.json'"
+    # Don't restart automatically by default (you can change to "on-failure" or "always")
+    restart: "no"
+    # Limit resources so scans aren't accidentally too aggressive from one host
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Optional networks section (default network will be created automatically).
+# networks:
+#   default:
+#     driver: bridge

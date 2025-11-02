@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Milyzway-Scanner"
+version = "0.1.0"
+description = "Red team vulnerability scanning module"
+authors = [{name="critfinds", email="jsbtc1@proton.me"}]
+dependencies = []
