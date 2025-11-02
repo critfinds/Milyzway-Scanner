@@ -1,5 +1,6 @@
 aiohttp
 rich
+playwright
 PyYAML
 mythril
 slither-analyzer

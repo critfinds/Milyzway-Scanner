@@ -51,26 +51,14 @@ async def main_async(args: argparse.Namespace):
 
     requester = AioRequester(timeout=timeout, proxies=proxies, username=args.username, password=args.password, login_url=args.login_url)
 
+    console = Console()
+
     if args.login_url:
         login_success = await requester.login()
         if not login_success:
             console.print("[bold red]Login failed. Exiting.[/bold red]")
             await requester.close()
             return
-
-    plugins = load_plugins(enabled_plugins)
-
-    enabled_plugins = cfg.get("enabled_plugins") if isinstance(cfg, dict) else None
-    if args.scan_type == "web2":
-        enabled_plugins = ["cors", "csrf", "rce", "command_injection", "ssrf", "oauth", "sqli", "xss", "xxe", "xpath", "insecure_deserialization", "ssti"]
-    elif args.scan_type == "web3":
-        enabled_plugins = ["solidity", "solidity_tools"]
-
-    plugins = load_plugins(enabled_plugins)
-
-    console = Console()
-    for plugin in plugins:
-        console.print(f"Loaded plugin: {plugin.__class__}")
 
     targets = []
     if args.target:
@@ -94,12 +82,29 @@ async def main_async(args: argparse.Namespace):
         LOG.error("No --target or --targets-file provided. Nothing to do.")
         return
 
+    # Determine scan type and enabled plugins based on the first target
+    determined_scan_type = None
+    if targets:
+        first_target = targets[0]
+        if first_target.startswith(("http://", "https://")):
+            determined_scan_type = "web2"
+        elif first_target.startswith(("file://", "0x")):
+            determined_scan_type = "web3"
+
+    enabled_plugins = cfg.get("enabled_plugins") if isinstance(cfg, dict) else None
+    if determined_scan_type == "web2":
+        enabled_plugins = ["cors", "csrf", "rce", "command_injection", "ssrf", "oauth", "sqli", "xss", "xxe", "xpath", "insecure_deserialization", "ssti"]
+    elif determined_scan_type == "web3":
+        enabled_plugins = ["solidity", "solidity_tools"]
+
+    plugins = load_plugins(enabled_plugins)
+
     if not args.no_crawl:
         console.print("Crawling for more targets...")
         crawled_targets = set()
         for target in targets:
-            crawler = Crawler(target, requester)
-            crawled_urls = await crawler.start()
+            crawler = Crawler(requester)
+            crawled_urls = await crawler.start(target)
             for url in crawled_urls:
                 crawled_targets.add(url)
         targets = list(crawled_targets)
@@ -161,7 +166,6 @@ def main():
     parser.add_argument("--config", default="config.yml", help="Path to the configuration file")
     parser.add_argument("--target", help="Single target URL to scan")
     parser.add_argument("--targets-file", help="File containing a list of target URLs")
-    parser.add_argument("--scan-type", choices=["web2", "web3"], help="Type of scan to perform")
     parser.add_argument("--no-crawl", action="store_true", help="Disable crawling and only scan the target URL")
     parser.add_argument("--output-format", choices=["json", "csv", "html"], default="table", help="Output format for the scan results")
     parser.add_argument("--oast-server", help="URL of the OAST server for out-of-band detection")
