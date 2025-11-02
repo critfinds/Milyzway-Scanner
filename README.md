@@ -13,10 +13,10 @@ A modular, asynchronous vulnerability scanner for web applications and smart con
 
 ## Installation
 
-1.  Clone the repository:
+1.  Clone the repository using SSH get it from Github:
 
     ```
-    git clone https://github.com/Milyzway/Milyzway-Scanner.git
+    git@github.com:critfinds/Milyzway-Scanner.git
     ```
 
 2.  Run the installer script:
