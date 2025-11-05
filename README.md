@@ -1,5 +1,7 @@
 # Milyzway-Scanner
 ![Milyzway.png](/Milyzway.png)
+
+
 A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
 
 ## Features
