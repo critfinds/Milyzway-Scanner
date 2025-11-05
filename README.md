@@ -1,5 +1,5 @@
 # Milyzway-Scanner
-
+![milyzway-preview.png](/milyzway-preview.png)
 A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
 
 ## Features
@@ -13,10 +13,10 @@ A modular, asynchronous vulnerability scanner for web applications and smart con
 
 ## Installation
 
-1.  Clone the repository:
+1.  Clone the repository using SSH get it from Github:
 
     ```
-    git clone https://github.com/Milyzway/Milyzway-Scanner.git
+    git@github.com:critfinds/Milyzway-Scanner.git
     ```
 
 2.  Run the installer script:
