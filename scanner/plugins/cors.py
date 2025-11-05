@@ -30,21 +30,12 @@ class Plugin(BasePlugin):
 
             if acao:
                 if acao == "*":
-                    if acac and acac.lower() == "true":
-                        findings.append({
-                            "type": "wildcard_with_credentials",
-                            "origin_tested": origin,
-                            "acao": acao,
-                            "acac": acac,
-                            "note": "Access-Control-Allow-Origin is '*' and credentials are allowed.",
-                        })
-                    else:
-                        findings.append({
-                            "type": "wildcard_no_credentials",
-                            "origin_tested": origin,
-                            "acao": acao,
-                            "note": "Access-Control-Allow-Origin is '*' (no credentials).",
-                        })
+                    findings.append({
+                        "type": "wildcard_no_credentials",
+                        "origin_tested": origin,
+                        "acao": acao,
+                        "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case).",
+                    })
                 elif acao == origin:
                     findings.append({
                         "type": "reflected_origin_allowed",

@@ -26,15 +26,36 @@ def write_html(path: str, data: Any) -> Path:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("w") as f:
-        f.write("<html><head><title>Scan Results</title></head><body>")
-        f.write("<h1>Scan Results</h1>")
-        f.write("<table border=1>")
-        f.write("<tr><th>Target</th><th>Plugin</th><th>Result</th></tr>")
+        f.write("""<html>
+<head>
+    <title>Scan Results</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scan Results</h1>
+    <table border=1>
+        <tr><th>Target</th><th>Plugin</th><th>Result</th></tr>
+""")
         for result in data:
             if result["vulnerabilities"]:
                 for vuln in result["vulnerabilities"]:
                     f.write(f"<tr><td>{vuln['target']}</td><td>{vuln['plugin']}</td><td>{str(vuln['result'])}</td></tr>")
-        f.write("</table>")
-        f.write("</body></html>")
+        f.write("</table></body></html>")
     return p
  

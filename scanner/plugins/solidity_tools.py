@@ -36,7 +36,7 @@ class SolidityToolsPlugin(BasePlugin):
 
     async def scan_address(self, address: str, requester):
         # Etherscan API key (replace with your own)
-        api_key = "YOUR_ETHERSCAN_API_KEY"
+        api_key = "S346A7YQ1CU9GJ5AGEPHMT3NEDRDUXE63C"
 
         # Construct the Etherscan API URL
         url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={address}&apikey={api_key}"
@@ -51,7 +51,7 @@ class SolidityToolsPlugin(BasePlugin):
             return []
 
         if data["status"] != "1":
-            LOG.error(f"Etherscan API returned an error: {data[\"message\"]}")
+            LOG.error(f"Etherscan API returned an error: {data.get("message", "unknown error")}")
             return []
 
         source_code = data["result"][0]["SourceCode"]

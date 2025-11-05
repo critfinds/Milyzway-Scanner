@@ -25,6 +25,20 @@ from scanner.utils.crawler import Crawler
 LOG = get_logger("vuln-scanner")
 
 
+import re
+
+URL_REGEX = re.compile(
+    r'^(?:http|ftp)s?://'  # http:// or https://
+    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+    r'localhost|'  # localhost...
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+    r'(?::\d+)?'  # optional port
+    r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+def is_valid_url(url):
+    return re.match(URL_REGEX, url) is not None
+
+
 async def scan_target(target: str, plugins: List, requester: AioRequester, oast_server: str = None):
     result = {"target": target, "vulnerabilities": []}
     for plugin in plugins:
@@ -48,10 +62,21 @@ async def main_async(args: argparse.Namespace):
     http_cfg = cfg.get("http", {}) if isinstance(cfg, dict) else {}
     timeout = http_cfg.get("timeout") if isinstance(http_cfg, dict) else None
     proxies = http_cfg.get("proxies") if isinstance(http_cfg, dict) else None
+    max_field_size = http_cfg.get("max_field_size", 65536) if isinstance(http_cfg, dict) else 65536
 
-    requester = AioRequester(timeout=timeout, proxies=proxies, username=args.username, password=args.password, login_url=args.login_url)
+    requester = AioRequester(timeout=timeout, proxies=proxies, username=args.username, password=args.password, login_url=args.login_url, max_field_size=max_field_size)
 
     console = Console()
+
+    # Milyzway ASCII Art Banner
+    milyzway_banner = r"""
+  __  __ _ _                           
+ |  \/  (_) |_  _ _____ __ ____ _ _  _ 
+ | |\/| | | | || |_ /\ V  V / _` | || |
+ |_|  |_|_|_|\_, /__| \_/\_/\__,_|\_, |
+             |__/                 |__/                                                                                           
+"""
+    console.print(f"[bold yellow]{milyzway_banner}[/bold yellow]")
 
     if args.login_url:
         login_success = await requester.login()
@@ -62,7 +87,10 @@ async def main_async(args: argparse.Namespace):
 
     targets = []
     if args.target:
-        targets.append(args.target)
+        if is_valid_url(args.target):
+            targets.append(args.target)
+        else:
+            LOG.error(f"Invalid target URL: {args.target}")
     elif args.targets_file:
         targets_config = Path(args.targets_file)
         LOG.info("Starting scan targets from %s", targets_config)
@@ -75,9 +103,11 @@ async def main_async(args: argparse.Namespace):
                     targets.append(f"file://{Path(line).resolve()}")
                 elif not line.startswith(("http://", "https://")):
                     line = "http://" + line
+                
+                if is_valid_url(line):
                     targets.append(line)
                 else:
-                    targets.append(line)
+                    LOG.error(f"Invalid URL in targets file: {line}")
     else:
         LOG.error("No --target or --targets-file provided. Nothing to do.")
         return
@@ -109,12 +139,14 @@ async def main_async(args: argparse.Namespace):
                 crawled_targets.add(url)
         targets = list(crawled_targets)
 
-    concurrency = cfg.get("concurrency", 5) if isinstance(cfg, dict) else 5
+    concurrency = args.concurrency or (cfg.get("concurrency", 5) if isinstance(cfg, dict) else 5)
     semaphore = asyncio.Semaphore(concurrency)
+
+    oast_server = args.oast_server or (cfg.get("oast_server") if isinstance(cfg, dict) else None)
 
     async def sem_scan(target):
         async with semaphore:
-            return await scan_target(target, plugins, requester, args.oast_server)
+            return await scan_target(target, plugins, requester, oast_server)
 
     tasks = [sem_scan(target) for target in targets]
     with Progress() as progress:
@@ -160,6 +192,8 @@ async def main_async(args: argparse.Namespace):
     await requester.close()
 
 
+import os
+
 def main():
     """Entrypoint to run the scanner"""
     parser = argparse.ArgumentParser(description="Milyzway Vulnerability Scanner")
@@ -168,10 +202,11 @@ def main():
     parser.add_argument("--targets-file", help="File containing a list of target URLs")
     parser.add_argument("--no-crawl", action="store_true", help="Disable crawling and only scan the target URL")
     parser.add_argument("--output-format", choices=["json", "csv", "html"], default="table", help="Output format for the scan results")
-    parser.add_argument("--oast-server", help="URL of the OAST server for out-of-band detection")
+    parser.add_argument("--oast-server", default=os.environ.get("OAST_SERVER"), help="URL of the OAST server for out-of-band detection")
     parser.add_argument("--username", help="Username for authentication")
     parser.add_argument("--password", help="Password for authentication")
     parser.add_argument("--login-url", help="URL of the login page")
+    parser.add_argument("--concurrency", type=int, help="Number of concurrent workers")
     args = parser.parse_args()
 
     try:

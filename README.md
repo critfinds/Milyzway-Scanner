@@ -33,6 +33,12 @@ A modular, asynchronous vulnerability scanner for web applications and smart con
     ```
     This will install `rich` and other necessary packages.
 
+    **Note:** The `subdomain_takeover` plugin requires `subzy` to be installed. You can install it with the following command:
+
+    ```bash
+    go install -v github.com/PentestPad/subzy@latest
+    ```
+
 ## Usage
 
 1.  Activate the virtual environment:
@@ -111,6 +117,29 @@ The following plugins are available:
 *   `xpath`: Detects XPath Injection vulnerabilities (error-based, boolean-based).
 *   `insecure_deserialization`: Detects Insecure Deserialization vulnerabilities.
 *   `ssti`: Detects Server-Side Template Injection (SSTI) vulnerabilities.
+
+## Creating a Plugin
+
+Creating a new plugin is easy. Here are the basic steps:
+
+1.  **Create a new file** in the `scanner/plugins` directory. The name of the file should be the name of your plugin (e.g., `my_plugin.py`).
+
+2.  **Inherit from `BasePlugin`** and create a `Plugin` class:
+
+    ```python
+    from .base import BasePlugin
+
+    class Plugin(BasePlugin):
+        name = "my_plugin"
+
+        async def run(self, target: str, requester, oast_server: str = None):
+            # Your scanning logic here
+            pass
+    ```
+
+3.  **Implement the `run` method.** This method should contain your scanning logic. It takes the `target` URL, the `requester` object (an instance of `AioRequester`), and the `oast_server` URL as input. The method should return a dictionary with your findings, or `None` if no vulnerabilities are found.
+
+4.  **Enable your plugin** in the `config.yml` file by adding the name of your plugin to the `enabled_plugins` list.
 
 ## Bug Bounties
 

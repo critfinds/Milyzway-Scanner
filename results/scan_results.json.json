@@ -1,0 +1,60 @@
+[
+  {
+    "target": "http://brand.base.org",
+    "vulnerabilities": [
+      {
+        "plugin": "base",
+        "target": "http://brand.base.org",
+        "result": {
+          "cors_findings": [
+            {
+              "type": "wildcard_no_credentials",
+              "origin_tested": "https://evil.example",
+              "acao": "*",
+              "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case)."
+            },
+            {
+              "type": "wildcard_no_credentials",
+              "origin_tested": "http://localhost:3000",
+              "acao": "*",
+              "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case)."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "target": "http://pro.coinbase.com",
+    "vulnerabilities": []
+  },
+  {
+    "target": "http://brand.base.org#main-content",
+    "vulnerabilities": [
+      {
+        "plugin": "base",
+        "target": "http://brand.base.org#main-content",
+        "result": {
+          "cors_findings": [
+            {
+              "type": "wildcard_no_credentials",
+              "origin_tested": "https://evil.example",
+              "acao": "*",
+              "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case)."
+            },
+            {
+              "type": "wildcard_no_credentials",
+              "origin_tested": "http://localhost:3000",
+              "acao": "*",
+              "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case)."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "target": "http://coinbase.com",
+    "vulnerabilities": []
+  }
+]

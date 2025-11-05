@@ -13,8 +13,8 @@ ERROR_BASED_PAYLOADS = [
 ]
 
 BOOLEAN_BASED_PAYLOADS = {
-    "' or 1=1 or ''='": "' and 1=2 and ''='",
-    "' or 'a'='a': "' and 'a'='b'",
+    "' or 1=1 or ''=''": "' and 1=2 and ''=''",
+    "' or 'a'='a'": "' and 'a'='b'",
 }
 
 # Common XPath error messages

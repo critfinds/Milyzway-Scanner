@@ -1,7 +1,7 @@
 import ast
 from scanner.plugins.base import BasePlugin
 
-class CommandInjectionPlugin(BasePlugin):
+class Plugin(BasePlugin):
     name = "command_injection"
 
     async def run(self, target: str, requester, oast_server: str = None):
@@ -10,7 +10,7 @@ class CommandInjectionPlugin(BasePlugin):
 
         try:
             response = await requester.get(target)
-            response.raise_for_status()
+            await response.raise_for_status()
             text = await response.text()
         except Exception:
             return []

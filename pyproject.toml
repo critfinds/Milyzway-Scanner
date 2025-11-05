@@ -5,6 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Milyzway-Scanner"
 version = "0.1.0"
-description = "Red team vulnerability scanning module"
+description = "A modular and extensible vulnerability scanner."
+readme = "README.md"
 authors = [{name="critfinds", email="jsbtc1@proton.me"}]
-dependencies = []
+requires-python = ">=3.6"
+license = {file = "LICENSE"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "aiohttp",
+    "rich",
+    "playwright",
+    "PyYAML",
+    "mythril",
+    "slither-analyzer",
+    "beautifulsoup4",
+]
+urls = {Homepage = "https://github.com/your-username/milyzway-scanner"}
+
+[project.scripts]
+milyzway-scanner = "scanner.app:main"
+
+[tool.setuptools.packages.find]
+include = ["scanner*"]

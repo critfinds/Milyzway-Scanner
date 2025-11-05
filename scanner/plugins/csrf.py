@@ -1,7 +1,7 @@
 from scanner.plugins.base import BasePlugin
 from bs4 import BeautifulSoup
 
-class CsrfPlugin(BasePlugin):
+class Plugin(BasePlugin):
     name = "csrf"
 
     async def run(self, target: str, requester, oast_server: str = None):
@@ -10,7 +10,7 @@ class CsrfPlugin(BasePlugin):
 
         try:
             response = await requester.get(target)
-            response.raise_for_status()
+            await response.raise_for_status()
             soup = BeautifulSoup(await response.text(), "html.parser")
         except Exception:
             return []

@@ -24,7 +24,9 @@ class Plugin(BasePlugin):
         headers = {"Content-Type": "application/xml"}
         try:
             response = await requester.post(target, data=PAYLOAD, headers=headers)
-            content = await response.text()
+            if not response or not isinstance(response, dict):
+                return None
+            content = response.get("text") or ""
             if "root:x:0:0:root" in content:
                 return f"XXE vulnerability found at {target}"
         except Exception:
