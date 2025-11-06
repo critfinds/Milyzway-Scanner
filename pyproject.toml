@@ -24,7 +24,7 @@ dependencies = [
     "slither-analyzer",
     "beautifulsoup4",
 ]
-urls = {Homepage = "https://github.com/your-username/milyzway-scanner"}
+urls = {Homepage = "https://github.com/critfinds/milyzway-scanner"}
 
 [project.scripts]
 milyzway-scanner = "scanner.app:main"
