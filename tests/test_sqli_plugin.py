@@ -10,90 +10,74 @@ class TestSqliPlugin(unittest.TestCase):
         plugin = SqliPlugin()
         requester = MagicMock()
 
-        async def mock_get(url, params):
-            if params and "'" in list(params.values())[0]:
-                return AsyncMock(text=AsyncMock(return_value="you have an error in your sql syntax;"))
-            return AsyncMock(text=AsyncMock(return_value=""))
+        async def mock_get(url, params=None):
+            if params and any("'" in str(v) for v in params.values()):
+                return {"status": 200, "text": "you have an error in your sql syntax;"}
+            return {"status": 200, "text": "Normal response"}
 
-        requester.get = mock_get
+        requester.get = AsyncMock(side_effect=mock_get)
 
         result = asyncio.run(plugin.run("https://example.com?id=1", requester))
 
         self.assertIsNotNone(result)
-        self.assertIn("Error-based SQLi found", result[0])
+        self.assertGreater(len(result), 0)
+        self.assertEqual(result[0]["type"], "error_based_sqli")
 
     def test_boolean_based_sqli_in_form(self):
         plugin = SqliPlugin()
         requester = MagicMock()
 
         async def mock_get(url, params=None):
-            return AsyncMock(text=AsyncMock(return_value="<form action='/login' method='post'><input type='text' name='username'><input type='password' name='password'></form>"))
+            return {"status": 200, "text": "<form action='/login' method='post'><input type='text' name='username'><input type='password' name='password'></form>"}
 
-        async def mock_post(url, data):
-            if "AND 1=1 --" in list(data.values())[0]:
-                return AsyncMock(text=AsyncMock(return_value="Welcome"))
-            return AsyncMock(text=AsyncMock(return_value="Invalid credentials"))
+        async def mock_post(url, data=None, params=None):
+            if data and any("AND 1=1" in str(v) or "OR 1=1" in str(v) for v in data.values()):
+                return {"status": 200, "text": "Welcome back! Here is your account data and profile information"}
+            return {"status": 200, "text": "Invalid credentials"}
 
-        requester.get = mock_get
-        requester.post = mock_post
-
-        result = asyncio.run(plugin.run("https://example.com", requester))
-
-        self.assertIsNotNone(result)
-        self.assertIn("Boolean-based SQLi found", result[0])
-
-    def test_boolean_based_sqli_in_form(self):
-        plugin = SqliPlugin()
-        requester = MagicMock()
-
-        async def mock_get(url, params=None):
-            return AsyncMock(text=AsyncMock(return_value="<form action='/login' method='post'><input type='text' name='username'><input type='password' name='password'></form>"))
-
-        async def mock_post(url, data):
-            if "AND 1=1 --" in list(data.values())[0]:
-                return AsyncMock(text=AsyncMock(return_value="Welcome"))
-            return AsyncMock(text=AsyncMock(return_value="Invalid credentials"))
-
-        requester.get = mock_get
-        requester.post = mock_post
+        requester.get = AsyncMock(side_effect=mock_get)
+        requester.post = AsyncMock(side_effect=mock_post)
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
         self.assertIsNotNone(result)
-        self.assertIn("Boolean-based SQLi found", result[0])
+        self.assertGreater(len(result), 0)
+        self.assertEqual(result[0]["type"], "boolean_based_blind_sqli")
 
     def test_time_based_sqli_in_url(self):
         plugin = SqliPlugin()
         requester = MagicMock()
 
-        async def mock_get(url, params):
-            if params and "SLEEP(5)" in list(params.values())[0]:
+        async def mock_get(url, params=None):
+            if params and any("SLEEP" in str(v) for v in params.values()):
                 await asyncio.sleep(5)  # Simulate delay
-                return AsyncMock(text=AsyncMock(return_value=""))
-            return AsyncMock(text=AsyncMock(return_value=""))
+                return {"status": 200, "text": "Normal response"}
+            return {"status": 200, "text": "Normal response"}
 
-        requester.get = mock_get
+        requester.get = AsyncMock(side_effect=mock_get)
 
         result = asyncio.run(plugin.run("https://example.com?id=1", requester))
 
         self.assertIsNotNone(result)
-        self.assertIn("Time-based SQLi found", result[0])
+        self.assertGreater(len(result), 0)
+        self.assertEqual(result[0]["type"], "time_based_blind_sqli")
 
     def test_oast_based_sqli_in_form(self):
         plugin = SqliPlugin()
         requester = MagicMock()
 
         async def mock_get(url, params=None):
-            return AsyncMock(text=AsyncMock(return_value="<form action='/login' method='post'><input type='text' name='username'><input type='password' name='password'></form>"))
+            return {"status": 200, "text": "<form action='/login' method='post'><input type='text' name='username'><input type='password' name='password'></form>"}
 
-        async def mock_post(url, data):
-            return AsyncMock(text=AsyncMock(return_value=""))
+        async def mock_post(url, data=None, params=None):
+            return {"status": 200, "text": "Processing..."}
 
-        requester.get = mock_get
-        requester.post = mock_post
+        requester.get = AsyncMock(side_effect=mock_get)
+        requester.post = AsyncMock(side_effect=mock_post)
 
         oast_server = "http://oast.example.com"
         result = asyncio.run(plugin.run("https://example.com", requester, oast_server))
 
         self.assertIsNotNone(result)
-        self.assertIn("OAST-based SQLi payload sent", result[0])
+        self.assertGreater(len(result), 0)
+        self.assertEqual(result[0]["type"], "oast_based_sqli")

@@ -10,8 +10,10 @@ class Plugin(BasePlugin):
 
         try:
             response = await requester.get(target)
-            await response.raise_for_status()
-            soup = BeautifulSoup(await response.text(), "html.parser")
+            if not response or not isinstance(response, dict):
+                return []
+            soup = BeautifulSoup(response.get("text") or "", "html.parser")
+            cookies = response.get("headers", {}).get("Set-Cookie", "")
         except Exception:
             return []
 
@@ -26,22 +28,20 @@ class Plugin(BasePlugin):
                     break
             if not has_csrf_token:
                 results.append({
-                    "plugin": self.name,
-                    "tool": "csrf",
-                    "type": "form",
-                    "target": target,
+                    "type": "missing_csrf_token",
                     "message": f"Form without anti-CSRF token found on {target}",
+                    "severity": "medium",
+                    "confidence": "firm",
                 })
 
         # Check for SameSite attribute on cookies
-        for cookie in response.cookies.values():
-            if "samesite" not in cookie.keys():
-                results.append({
-                    "plugin": self.name,
-                    "tool": "csrf",
-                    "type": "cookie",
-                    "target": target,
-                    "message": f"Cookie without SameSite attribute found on {target}",
-                })
+        # This is a simplified check; a real implementation would parse cookies properly
+        if cookies and "samesite" not in cookies.lower():
+            results.append({
+                "type": "missing_samesite_cookie",
+                "message": f"Cookie without SameSite attribute found on {target}",
+                "severity": "low",
+                "confidence": "firm",
+            })
 
         return results

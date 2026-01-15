@@ -10,33 +10,29 @@ class TestCsrfPlugin(unittest.TestCase):
         plugin = CsrfPlugin()
         requester = MagicMock()
 
-        mock_response = AsyncMock()
-        mock_response.raise_for_status = AsyncMock()
-        mock_response.text.return_value = "<html><body><form><input type='text' name='username'></form></body></html>"
-        mock_response.cookies = {}
-
-        requester.get = AsyncMock(return_value=mock_response)
+        requester.get = AsyncMock(return_value={
+            "text": "<html><body><form><input type='text' name='username'></form></body></html>",
+            "headers": {}
+        })
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["type"], "form")
+        self.assertEqual(result[0]["type"], "missing_csrf_token")
 
     def test_cookie_without_samesite(self):
         plugin = CsrfPlugin()
         requester = MagicMock()
 
-        mock_response = AsyncMock()
-        mock_response.raise_for_status = AsyncMock()
-        mock_response.text.return_value = "<html><body></body></html>"
-        mock_response.cookies = {"sessionid": MagicMock(keys=lambda: [])}
-
-        requester.get = AsyncMock(return_value=mock_response)
+        requester.get = AsyncMock(return_value={
+            "text": "<html><body></body></html>",
+            "headers": {"Set-Cookie": "sessionid=123"}
+        })
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["type"], "cookie")
+        self.assertEqual(result[0]["type"], "missing_samesite_cookie")
 
 if __name__ == "__main__":
     unittest.main()

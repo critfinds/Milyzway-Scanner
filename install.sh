@@ -1,38 +1,31 @@
 #!/bin/bash
-
-# Milyzway-Scanner Installer
-
-# Exit on error
 set -e
 
-# Function to check if a command exists
+echo "=============================="
+echo "  Milyzway-Scanner Installer"
+echo "=============================="
+
+#############################################################
+# Helper: Check if command exists
+#############################################################
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Install dependencies
-echo "[*] Installing dependencies..."
+echo "[*] Updating system..."
+sudo apt-get update
 
-if ! command_exists git; then
-    echo "[+] git not found. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y git
-fi
+echo "[*] Installing system dependencies..."
+sudo apt-get install -y \
+    git curl wget unzip build-essential python3 python3-pip python3-venv \
+    software-properties-common libssl-dev pkg-config
 
-if ! command_exists python3; then
-    echo "[+] python3 not found. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y python3
-fi
 
-if ! command_exists pip; then
-    echo "[+] pip not found. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y python3-pip
-fi
+#############################################################
+#  PYTHON ENVIRONMENT
+#############################################################
 
-# Create and activate virtual environment
-echo "[*] Creating and activating virtual environment..."
+echo "[*] Creating Python virtual environment..."
 
 if [ ! -d "venv" ]; then
     python3 -m venv venv
@@ -40,23 +33,24 @@ fi
 
 source venv/bin/activate
 
-# Install Python packages
-echo "[*] Installing Python packages..."
+echo "[*] Upgrading pip..."
+pip install --upgrade pip
 
-pip install -r requirements.txt
+echo "[*] Installing Python packages from pyproject.toml..."
+pip install -e .
 
-# Install solc-select and Slither
-echo "[*] Installing solc-select and Slither..."
+echo "[*] Installing Playwright browsers..."
+playwright install chromium
 
-if ! command_exists solc-select; then
-    pip install solc-select
-fi
 
-solc-select install latest
-solc-select use latest
-
-if ! command_exists slither; then
-    pip install slither-analyzer
-fi
-
-echo "[+] Installation complete!"
+#############################################################
+#  FINISHED
+#############################################################
+echo ""
+echo "===================================="
+echo "  Installation complete successfully!"
+echo "===================================="
+echo ""
+echo "Activate your environment with:"
+echo "      source venv/bin/activate"
+echo ""

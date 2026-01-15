@@ -1,17 +1,117 @@
 targets:
-  - "https://example.com"
+  - "file://."
 
 enabled_plugins:
-  - cors
-  - oauth
-  - ssrf
-  - solidity_tools
-  - csrf
-  - rce
-  - command_injection
+  # Critical Web2 Vulnerabilities (Elite 9/10)
+  - rce                     # Remote Code Execution (50+ context-aware payloads)
+  - ssrf                    # Server-Side Request Forgery (AWS/Azure/GCP cloud metadata)
+  - sqli                    # SQL Injection (78 payloads, NoSQL, WAF bypass)
+  - file_upload             # File Upload vulnerabilities (RCE, XSS, XXE)
+  - path_traversal          # Path Traversal / LFI (log poisoning, sensitive files)
+  - open_redirect           # Open Redirect (OAuth bypass, redirect chains)
+  - xxe                     # XML External Entity attacks
 
-concurrency: 2
-rate_limit: 5
-timeout: 20
-output_path: "./results/scan_results.json"
-safe_mode: true
+  # API Security (Elite 9/10)
+  - idor                    # Insecure Direct Object Reference
+  - jwt_auth                # JWT authentication bypass (6 techniques)
+  - graphql                 # GraphQL vulnerabilities
+  - insecure_deserialization # Insecure Deserialization
+
+  # Classic Web Vulnerabilities (Strong 8/10)
+  - xss                     # Cross-Site Scripting
+  - csrf                    # Cross-Site Request Forgery
+  - cors                    # CORS misconfiguration
+  - ssti                    # Server-Side Template Injection
+  - xpath                   # XPath Injection
+
+# Performance & Safety Settings
+concurrency: 5              # Number of concurrent workers (increase for faster scans)
+rate_limit: 10              # Requests per second (adjust based on target)
+timeout: 30                 # Request timeout in seconds
+max_retries: 3              # Maximum retry attempts for failed requests
+
+# Output Configuration
+output_path: "./results/scan_results"
+output_format: "json"       # Options: json, html, csv, table
+
+# Safety Controls (IMPORTANT for production use)
+safe_mode: true             # Enable safety controls and scope validation
+respect_robots_txt: true    # Respect robots.txt directives
+max_depth: 3                # Maximum crawl depth (prevent infinite loops)
+
+# Scope Management (configure for each target)
+scope:
+  in_scope:
+    - "*.example.com"       # Update with your authorized targets
+    # - "*.coinbase.com"    # Example: Coinbase bug bounty
+    # - "api.example.com"
+
+  out_of_scope:
+    - "status.example.com"  # Status pages typically out of scope
+    - "blog.example.com"    # Blogs typically out of scope
+    # - "localhost"
+    # - "127.0.0.1"
+
+# HTTP Configuration
+http:
+  timeout: 30
+  max_field_size: 131072    # Maximum HTTP field size (128KB)
+  user_agent: "Milyzway-Scanner/2.0 (Security Research)"
+  follow_redirects: true
+  verify_ssl: true          # Set to false for testing environments
+
+# OAST Server (Out-of-Band Application Security Testing)
+# Set this or use --oast-server flag for blind vulnerability detection
+# oast_server: "http://your-oast-server.com"
+# Or use environment variable: export OAST_SERVER="http://your-server.com"
+
+# Authentication (if needed)
+# Can also be set via command-line arguments
+# username: ""
+# password: ""
+# login_url: ""
+
+# Logging
+logging:
+  level: "INFO"             # Options: DEBUG, INFO, WARNING, ERROR
+  file: "./logs/scanner.log"
+  console_output: true
+
+# Advanced Settings
+advanced:
+  enable_crawler: true      # Enable automatic crawling for more targets
+  crawler_max_depth: 3      # Maximum crawl depth
+  crawler_timeout: 60       # Crawler timeout in seconds
+  deduplication: true       # Remove duplicate findings
+  false_positive_check: true # Enable false positive detection
+
+# Plugin-Specific Configuration
+
+# SQLi Plugin Configuration
+sqli:
+  enable_time_based: true   # Time-based blind SQLi (slower but thorough)
+  enable_nosql: true        # NoSQL injection testing
+  waf_detection: true       # Detect and report WAF presence
+
+# RCE Plugin Configuration
+rce:
+  test_linux: true          # Test Linux/Unix command injection
+  test_windows: true        # Test Windows command injection
+  baseline_samples: 3       # Number of baseline timing samples
+  time_threshold: 3.0       # Time delay threshold in seconds
+
+# SSRF Plugin Configuration
+ssrf:
+  test_cloud_metadata: true # Test AWS/Azure/GCP metadata endpoints
+  test_internal: true       # Test internal network access
+  test_protocols: true      # Test file://, gopher://, etc.
+
+# File Upload Plugin Configuration
+file_upload:
+  test_rce: true            # Test for RCE via file upload
+  test_xss: true            # Test for XSS via SVG upload
+  test_xxe: true            # Test for XXE via XML/SVG upload
+
+# Note: This scanner is for authorized security testing only
+# Always obtain proper authorization before testing any system
+# Unauthorized testing is illegal and unethical

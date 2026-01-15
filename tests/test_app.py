@@ -37,13 +37,15 @@ class TestApp(unittest.TestCase):
 
     def test_scan_target(self):
         plugin = MagicMock()
-        plugin.run = AsyncMock(return_value={"vulnerability": "test"})
+        plugin.run = AsyncMock(return_value=[{"vulnerability": "test", "severity": "high", "confidence": "firm"}])
         requester = MagicMock()
 
         result = asyncio.run(scan_target("https://example.com", [plugin], requester))
 
         self.assertEqual(len(result["vulnerabilities"]), 1)
         self.assertEqual(result["vulnerabilities"][0]["result"], {"vulnerability": "test"})
+        self.assertEqual(result["vulnerabilities"][0]["severity"], "high")
+        self.assertEqual(result["vulnerabilities"][0]["confidence"], "firm")
 
 
 if __name__ == "__main__":

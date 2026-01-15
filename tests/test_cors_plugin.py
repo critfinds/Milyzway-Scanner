@@ -22,9 +22,8 @@ class TestCorsPlugin(unittest.TestCase):
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
-        self.assertIn("cors_findings", result)
-        self.assertEqual(len(result["cors_findings"]), 1)
-        self.assertEqual(result["cors_findings"][0]["type"], "wildcard_no_credentials")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["type"], "wildcard_no_credentials")
 
 if __name__ == "__main__":
     unittest.main()

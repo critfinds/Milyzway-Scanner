@@ -21,11 +21,18 @@ class Plugin(BasePlugin):
         headers = {"Content-Type": "application/x-java-serialized-object"}
         try:
             response = await requester.post(target, data=PAYLOAD, headers=headers)
-            content = await response.text()
+            if not response or not isinstance(response, dict):
+                return []
+            content = response.get("text") or ""
             if "java.io.InvalidClassException" in content or \
                "java.io.StreamCorruptedException" in content:
-                return f"Potential Insecure Deserialization vulnerability found at {target}"
+                return [{
+                    "type": "java_deserialization_error",
+                    "message": f"Potential Insecure Deserialization vulnerability found at {target}",
+                    "severity": "high",
+                    "confidence": "tentative",
+                }]
         except Exception:
             pass
         
-        return None
+        return []

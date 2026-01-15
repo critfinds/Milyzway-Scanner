@@ -39,19 +39,51 @@ def is_valid_url(url):
     return re.match(URL_REGEX, url) is not None
 
 
-async def scan_target(target: str, plugins: List, requester: AioRequester, oast_server: str = None):
+async def scan_target(target: str, plugins: List, requester: AioRequester, oast_server: str = None, plugin_timeout: int = 120):
+    """Scan a target with all enabled plugins.
+
+    Args:
+        target: URL or target to scan
+        plugins: List of plugin instances to run
+        requester: HTTP requester instance
+        oast_server: Optional OAST server URL
+        plugin_timeout: Timeout in seconds for each plugin execution (default: 120s)
+    """
     result = {"target": target, "vulnerabilities": []}
     for plugin in plugins:
+        plugin_name = getattr(plugin, "name", repr(plugin))
         try:
-            res = await plugin.run(target, requester, oast_server)
-            if res:
-                result["vulnerabilities"].append({
-                    "plugin": getattr(plugin, "name", repr(plugin)),
-                    "target": target,
-                    "result": res,
-                })
+            # Wrap plugin execution with timeout
+            findings = await asyncio.wait_for(
+                plugin.run(target, requester, oast_server),
+                timeout=plugin_timeout
+            )
+            if findings:
+                for finding in findings:
+                    processed_finding = {}
+                    if isinstance(finding, dict):
+                        processed_finding = finding
+                    elif isinstance(finding, str):
+                        # If finding is a string (e.g., an error message from a plugin),
+                        # wrap it in a dictionary to prevent AttributeError
+                        processed_finding = {"message": finding, "type": "plugin_error"}
+                    else:
+                        # Handle other unexpected types
+                        processed_finding = {"message": str(finding), "type": "plugin_output"}
+
+                    severity = processed_finding.pop("severity", "info")
+                    confidence = processed_finding.pop("confidence", "tentative")
+                    result["vulnerabilities"].append({
+                        "plugin": plugin_name,
+                        "target": target,
+                        "severity": severity,
+                        "confidence": confidence,
+                        "result": processed_finding,  # The rest of the finding dict
+                    })
+        except asyncio.TimeoutError:
+            LOG.warning("Plugin %s timed out after %ds on target %s", plugin_name, plugin_timeout, target)
         except Exception:
-            LOG.exception("Plugin %s failed on target %s", getattr(plugin, "name", plugin), target)
+            LOG.exception("Plugin %s failed on target %s", plugin_name, target)
     return result
 
 
@@ -89,21 +121,29 @@ async def main_async(args: argparse.Namespace):
     if args.target:
         if is_valid_url(args.target):
             targets.append(args.target)
+        elif not args.target.startswith(("http://", "https://")):
+            # Try prepending http:// if it looks like a domain
+            potential_url = "http://" + args.target
+            if is_valid_url(potential_url):
+                targets.append(potential_url)
+            else:
+                LOG.error(f"Invalid target: {args.target}. Must be a valid URL or domain.")
+                return
         else:
-            LOG.error(f"Invalid target URL: {args.target}")
+            LOG.error(f"Invalid target: {args.target}. Must be a valid URL.")
+            return
     elif args.targets_file:
         targets_config = Path(args.targets_file)
         LOG.info("Starting scan targets from %s", targets_config)
         with targets_config.open() as f:
             for line in f:
                 line = line.strip()
-                if not line:
+                if not line or line.startswith("#"):
                     continue
-                if Path(line).is_file():
-                    targets.append(f"file://{Path(line).resolve()}")
-                elif not line.startswith(("http://", "https://")):
+
+                if not line.startswith(("http://", "https://")):
                     line = "http://" + line
-                
+
                 if is_valid_url(line):
                     targets.append(line)
                 else:
@@ -112,20 +152,10 @@ async def main_async(args: argparse.Namespace):
         LOG.error("No --target or --targets-file provided. Nothing to do.")
         return
 
-    # Determine scan type and enabled plugins based on the first target
-    determined_scan_type = None
-    if targets:
-        first_target = targets[0]
-        if first_target.startswith(("http://", "https://")):
-            determined_scan_type = "web2"
-        elif first_target.startswith(("file://", "0x")):
-            determined_scan_type = "web3"
-
-    enabled_plugins = cfg.get("enabled_plugins") if isinstance(cfg, dict) else None
-    if determined_scan_type == "web2":
-        enabled_plugins = ["cors", "csrf", "rce", "command_injection", "ssrf", "oauth", "sqli", "xss", "xxe", "xpath", "insecure_deserialization", "ssti"]
-    elif determined_scan_type == "web3":
-        enabled_plugins = ["solidity", "solidity_tools"]
+    if args.plugins:
+        enabled_plugins = [p.strip() for p in args.plugins.split(',')]
+    else:
+        enabled_plugins = cfg.get("enabled_plugins") if isinstance(cfg, dict) else None
 
     plugins = load_plugins(enabled_plugins)
 
@@ -157,9 +187,40 @@ async def main_async(args: argparse.Namespace):
             all_results.append(result)
             progress.update(task, advance=1)
 
+    # Deduplicate vulnerabilities before reporting
+    unique_signatures = set()
+    deduplicated_results = []
+    for res in all_results:
+        unique_vulnerabilities = []
+        for vuln in res.get("vulnerabilities", []):
+            try:
+                # Create a signature for the vulnerability
+                target_domain = vuln['target'].split('//', 1)[-1].split('/', 1)[0]
+                plugin_name = vuln['plugin']
+                result_details = vuln.get('result', {})
+                vuln_type = result_details.get('type') or result_details.get('param')
+                
+                signature = f"{target_domain}|{plugin_name}|{vuln_type}"
+                
+                if signature not in unique_signatures:
+                    unique_signatures.add(signature)
+                    unique_vulnerabilities.append(vuln)
+            except (KeyError, IndexError):
+                # If creating a signature fails, just keep the vuln
+                unique_vulnerabilities.append(vuln)
+
+        if unique_vulnerabilities:
+            new_res = res.copy()
+            new_res["vulnerabilities"] = unique_vulnerabilities
+            deduplicated_results.append(new_res)
+    
+    all_results = deduplicated_results
+
     table = Table(title="Scan Results")
     table.add_column("Target", justify="right", style="cyan", no_wrap=True)
     table.add_column("Plugin", style="magenta")
+    table.add_column("Severity", style="yellow")
+    table.add_column("Confidence", style="blue")
     table.add_column("Result", justify="right", style="green")
 
     found_vulnerabilities = False
@@ -167,7 +228,13 @@ async def main_async(args: argparse.Namespace):
         if res["vulnerabilities"]:
             found_vulnerabilities = True
             for vuln in res["vulnerabilities"]:
-                table.add_row(vuln["target"], vuln["plugin"], str(vuln["result"]))
+                table.add_row(
+                    vuln["target"],
+                    vuln["plugin"],
+                    vuln.get("severity", "info"),
+                    vuln.get("confidence", "tentative"),
+                    str(vuln["result"])
+                )
 
     if found_vulnerabilities:
         console.print(table)
@@ -207,6 +274,7 @@ def main():
     parser.add_argument("--password", help="Password for authentication")
     parser.add_argument("--login-url", help="URL of the login page")
     parser.add_argument("--concurrency", type=int, help="Number of concurrent workers")
+    parser.add_argument("--plugins", help="Comma-separated list of plugins to run")
     args = parser.parse_args()
 
     try:

@@ -4,12 +4,25 @@ Provides a simple `load_plugins(enabled_plugins)` function that will
 import plugin modules from the `scanner.plugins` package and return
 instances of classes named `Plugin`.
 """
+import warnings
+from bs4 import XMLParsedAsHTMLWarning
+warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 import importlib
 import pkgutil
 from typing import List, Any, Optional
 from scanner.logger import get_logger
 
 LOG = get_logger("plugins")
+
+def get_all_plugins() -> List[str]:
+    """Return a list of all available plugin names."""
+    pkg_name = __name__
+    plugin_names = []
+    package = importlib.import_module(pkg_name)
+    for finder, name, ispkg in pkgutil.iter_modules(package.__path__):
+        plugin_names.append(name)
+    return plugin_names
+
 
 def load_plugins(enabled_plugins: Optional[List[str]] = None) -> List[Any]:
     pkg_name = __name__  # scanner.plugins

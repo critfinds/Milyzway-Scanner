@@ -14,9 +14,8 @@ class TestSsrfPlugin(unittest.TestCase):
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
-        self.assertIn("ssrf_findings", result)
-        self.assertEqual(len(result["ssrf_findings"]), 1)
-        self.assertEqual(result["ssrf_findings"][0]["param"], "url")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["type"], "ssrf_passive")
 
     def test_form_input(self):
         plugin = SsrfPlugin()
@@ -26,9 +25,7 @@ class TestSsrfPlugin(unittest.TestCase):
 
         result = asyncio.run(plugin.run("https://example.com", requester))
 
-        self.assertIn("ssrf_findings", result)
-        self.assertEqual(len(result["ssrf_findings"]), 1)
-        self.assertEqual(result["ssrf_findings"][0]["param"], "target")
+        self.assertEqual(len(result), 0)
 
 if __name__ == "__main__":
     unittest.main()

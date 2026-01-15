@@ -16,12 +16,15 @@ class TestRcePlugin(unittest.TestCase):
             return {"text": ""}
 
         requester.get = AsyncMock(side_effect=slow_response)
+        # baseline requests
+        requester.post = AsyncMock(return_value={"text": ""})
 
-        result = asyncio.run(plugin.run("https://example.com", requester))
+
+        result = asyncio.run(plugin.run("https://example.com?dummy_param=test", requester))
 
         self.assertIsNotNone(result)
         self.assertEqual(len(result), 1)
-        self.assertIn("Time-based RCE detected", result[0])
+        self.assertEqual(result[0]["type"], "time_based_rce")
 
 if __name__ == "__main__":
     unittest.main()

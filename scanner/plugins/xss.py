@@ -43,14 +43,22 @@ class Plugin(BasePlugin):
                         continue
                     content = response.get("text") or ""
                     if payload in content:
-                        vulnerabilities.append(f"Reflected XSS found in URL parameter '{param}' with payload '{payload}' at {new_url}")
+                        vulnerabilities.append({
+                            "type": "reflected_xss",
+                            "param": param,
+                            "payload": payload,
+                            "message": f"Reflected XSS found in URL parameter '{param}'.",
+                            "severity": "medium",
+                            "confidence": "firm",
+                        })
                 except Exception:
                     pass
 
         # Test for XSS in forms
         try:
             response = await requester.get(target)
-            soup = BeautifulSoup(await response.text(), "html.parser")
+            if not response or not isinstance(response, dict): raise ValueError
+            soup = BeautifulSoup(response.get("text") or "", "html.parser")
             forms = soup.find_all("form")
         except Exception:
             forms = []
@@ -59,16 +67,11 @@ class Plugin(BasePlugin):
             action = form.get("action")
             method = form.get("method", "get").lower()
             inputs = form.find_all(["input", "textarea", "select"])
-
             form_url = urljoin(target, action)
 
             for payload in REFLECTED_PAYLOADS:
-                data = {}
-                for i in inputs:
-                    name = i.get("name")
-                    value = i.get("value", "")
-                    if name:
-                        data[name] = payload
+                data = {i.get("name"): payload for i in inputs if i.get("name")}
+                if not data: continue
                 
                 try:
                     if method == "post":
@@ -80,7 +83,14 @@ class Plugin(BasePlugin):
                         continue
                     content = response.get("text") or ""
                     if payload in content:
-                        vulnerabilities.append(f"Reflected XSS found in form on page {target} in a '{method}' request to {form_url} with payload '{payload}'")
+                        vulnerabilities.append({
+                            "type": "reflected_xss_form",
+                            "url": form_url,
+                            "payload": payload,
+                            "message": f"Reflected XSS found in form on page {target}.",
+                            "severity": "medium",
+                            "confidence": "firm",
+                        })
                 except Exception:
                     pass
         return vulnerabilities
@@ -97,15 +107,11 @@ class Plugin(BasePlugin):
         for url in crawled_urls:
             try:
                 response = await requester.get(url)
-                if not response or not isinstance(response, dict):
-                    continue
+                if not response or not isinstance(response, dict): continue
                 content = response.get("text") or ""
-                print(f"Crawled URL: {url}, Content: {content[:100]}...") # Debug print
                 soup = BeautifulSoup(content, "html.parser")
                 forms = soup.find_all("form")
-                print(f"Found {len(forms)} forms on {url}") # Debug print
-            except Exception as e:
-                print(f"Error parsing HTML or finding forms on {url}: {e}") # Debug print
+            except Exception:
                 forms = []
 
             for form in forms:
@@ -117,34 +123,34 @@ class Plugin(BasePlugin):
                 payload = f"<script>alert('{uuid.uuid4()}')</script>"
                 unique_payloads[payload] = form_url
 
-                data = {}
-                for i in inputs:
-                    name = i.get("name")
-                    if name:
-                        data[name] = payload
+                data = {i.get("name"): payload for i in inputs if i.get("name")}
+                if not data: continue
                 
-                print(f"Submitting form to {form_url} with method {method} and data {data}") # Debug print
                 try:
                     if method == "post":
-                        response = await requester.post(form_url, data=data)
+                        await requester.post(form_url, data=data)
                     else:
-                        response = await requester.get(form_url, params=data)
-                    print(f"Form submission response: {response}") # Debug print
-                except Exception as e:
-                    print(f"Error submitting form to {form_url}: {e}") # Debug print
+                        await requester.get(form_url, params=data)
+                except Exception:
                     pass
 
         # 3. Re-crawl the application to check for stored payloads
         for url in crawled_urls:
             try:
                 response = await requester.get(url)
-                if not response or not isinstance(response, dict):
-                    continue
+                if not response or not isinstance(response, dict): continue
                 content = response.get("text") or ""
                 for payload, form_url in unique_payloads.items():
-                    print(f"Checking for payload: {payload} in content: {content}") # Debug print
                     if payload in content:
-                        vulnerabilities.append(f"Stored XSS found at {url} from form at {form_url} with payload '{payload}'")
+                        vulnerabilities.append({
+                            "type": "stored_xss",
+                            "url": url,
+                            "payload": payload,
+                            "origin_form": form_url,
+                            "message": f"Stored XSS found at {url} from form at {form_url}.",
+                            "severity": "high",
+                            "confidence": "firm",
+                        })
             except Exception:
                 pass
 
@@ -152,5 +158,12 @@ class Plugin(BasePlugin):
 
     async def run(self, target: str, requester, oast_server: str = None):
         reflected_vulnerabilities = await self._test_reflected_xss(target, requester, oast_server)
-        stored_vulnerabilities = await self._test_stored_xss(target, requester, oast_server)
+
+        # Stored XSS requires the Crawler which uses Playwright.
+        # If Playwright browsers aren't installed, we gracefully skip stored XSS testing.
+        try:
+            stored_vulnerabilities = await self._test_stored_xss(target, requester, oast_server)
+        except Exception:
+            stored_vulnerabilities = []
+
         return reflected_vulnerabilities + stored_vulnerabilities

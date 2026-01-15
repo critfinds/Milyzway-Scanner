@@ -1,6 +1,7 @@
 """Simple result reporter utilities."""
 import json
 import csv
+import html
 from pathlib import Path
 from typing import Any
 
@@ -55,7 +56,10 @@ def write_html(path: str, data: Any) -> Path:
         for result in data:
             if result["vulnerabilities"]:
                 for vuln in result["vulnerabilities"]:
-                    f.write(f"<tr><td>{vuln['target']}</td><td>{vuln['plugin']}</td><td>{str(vuln['result'])}</td></tr>")
+                    target = html.escape(str(vuln.get('target', '')))
+                    plugin = html.escape(str(vuln.get('plugin', '')))
+                    result_str = html.escape(str(vuln.get('result', '')))
+                    f.write(f"<tr><td>{target}</td><td>{plugin}</td><td>{result_str}</td></tr>")
         f.write("</table></body></html>")
     return p
  

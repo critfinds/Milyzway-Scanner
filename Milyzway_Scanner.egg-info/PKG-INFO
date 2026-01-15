@@ -25,7 +25,7 @@ License: MIT License
         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         SOFTWARE.
         
-Project-URL: Homepage, https://github.com/your-username/milyzway-scanner
+Project-URL: Homepage, https://github.com/critfinds/Milyzway-Scanner
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
@@ -36,156 +36,275 @@ Requires-Dist: aiohttp
 Requires-Dist: rich
 Requires-Dist: playwright
 Requires-Dist: PyYAML
-Requires-Dist: mythril
-Requires-Dist: slither-analyzer
 Requires-Dist: beautifulsoup4
+Requires-Dist: python-dotenv
+Requires-Dist: pydantic>=2.0.0
 Dynamic: license-file
 
-# Milyzway-Scanner
+# Milyzway Scanner - Advanced Web Application Vulnerability Scanner
 
-A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
+![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
+
+A production-ready, modular vulnerability scanner designed for comprehensive web application security testing. Built for security researchers, penetration testers, and bug bounty hunters.
 
 ## Features
 
-*   **Asynchronous Scanning:** High-throughput scanning with `aiohttp` and `aiolimiter`.
-*   **Plugin Architecture:** Easily extend the scanner with new checks.
-*   **Web Application Scanning:** Plugins for CORS, CSRF, RCE, and command injection.
-*   **Smart Contract Scanning:** Scan smart contracts from local files or from a crypto address on the blockchain.
-*   **Config-driven:** Configure the scanner with a YAML file.
-*   **Easy Installation:** Install all the necessary tools and dependencies with a single script.
+### Core Capabilities
+- **17 Advanced Web2 Security Plugins** - Comprehensive coverage of OWASP Top 10 and beyond
+- **Async Architecture** - High-performance concurrent scanning with configurable rate limiting
+- **Intelligent Crawling** - Automatic discovery of targets with depth control
+- **Flexible Output** - JSON, CSV, HTML, and console table formats
+- **Production Hardening** - Plugin timeouts, retry logic, error handling, XSS-safe reports
+- **Docker Support** - Containerized deployment with health checks and non-root execution
 
-## Installation
+### Security Coverage
 
-1.  Clone the repository:
+#### Critical Web Vulnerabilities (9/10 Severity)
+- **Remote Code Execution (RCE)** - 50+ context-aware payloads for command injection
+- **Server-Side Request Forgery (SSRF)** - Cloud metadata testing (AWS/Azure/GCP)
+- **SQL Injection (SQLi)** - 78 payloads including NoSQL and WAF bypass techniques
+- **File Upload** - RCE, XSS, and XXE via malicious file uploads
+- **Path Traversal / LFI** - Log poisoning and sensitive file extraction
+- **XML External Entity (XXE)** - Out-of-band and in-band XXE detection
 
-    ```
-    git clone https://github.com/Milyzway/Milyzway-Scanner.git
-    ```
+#### API & Modern Web (8-9/10 Severity)
+- **IDOR** - Insecure Direct Object Reference detection
+- **JWT Authentication Bypass** - 6 techniques for token manipulation
+- **GraphQL** - Introspection, batching attacks, and depth limit bypass
+- **Insecure Deserialization** - Pickle, JSON, and YAML deserialization exploits
+- **Open Redirect** - OAuth bypass and redirect chain exploitation
 
-2.  Run the installer script:
+#### Classic Web Vulnerabilities (7-8/10 Severity)
+- **Cross-Site Scripting (XSS)** - Reflected, DOM-based, and stored XSS
+- **Cross-Site Request Forgery (CSRF)** - Token bypass and validation testing
+- **CORS Misconfiguration** - Origin validation and credential exposure
+- **Server-Side Template Injection (SSTI)** - Jinja2, Twig, and other template engines
+- **XPath Injection** - XML query manipulation and data extraction
 
-    ```
-    cd Milyzway-Scanner
-    ./install.sh
-    ```
+#### WAF & Evasion (7/10 Severity)
+- **WAF Bypass** - Encoding, obfuscation, and chunking techniques
 
-    Alternatively, you can install dependencies manually:
+## Quick Start
 
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install `rich` and other necessary packages.
+### Installation
 
-    **Note:** The `subdomain_takeover` plugin requires `subzy` to be installed. You can install it with the following command:
+#### Option 1: Using pip (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/critfinds/Milyzway-Scanner.git
+cd Milyzway-Scanner
 
-    ```bash
-    go install -v github.com/PentestPad/subzy@latest
-    ```
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-## Usage
+# Install
+pip install -e .
 
-1.  Activate the virtual environment:
+# Install Playwright browsers
+playwright install chromium
+```
 
-    ```
-    source venv/bin/activate
-    ```
+#### Option 2: Using install script
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+```
 
-2.  Run the scanner:
+#### Option 3: Docker
+```bash
+# Build the image
+docker build -t milyzway-scanner .
 
-    The scanner now automatically determines the scan type (web2 for web applications and web3 for smart contracts) based on the target. The CLI output has also been enhanced with progress bars and formatted tables for a better user experience.
+# Run a scan
+docker run --rm -v $(pwd)/results:/opt/vulnscanner/results \
+  milyzway-scanner --target https://example.com --output-format json
+```
 
-    To scan a web application (crawling enabled by default):
+### Basic Usage
 
-    ```
-    python3 -m scanner.app --target https://example.com
-    ```
+```bash
+# Scan a single target
+python -m scanner.app --target https://example.com
 
-    To scan a web application without crawling:
+# Scan multiple targets from file
+python -m scanner.app --targets-file targets.txt
 
-    ```
-    python3 -m scanner.app --target https://example.com --no-crawl
-    ```
+# Specify output format
+python -m scanner.app --target https://example.com --output-format json
 
-    To scan multiple targets from a file:
+# Run specific plugins only
+python -m scanner.app --target https://example.com --plugins "xss,sqli,rce"
 
-    ```
-    python3 -m scanner.app --targets-file targets.txt
-    ```
+# Disable crawling (faster, but fewer targets)
+python -m scanner.app --target https://example.com --no-crawl
 
-    To scan smart contracts:
+# Custom configuration
+python -m scanner.app --config my-config.yml --target https://example.com
+```
 
-    ```
-    python3 -m scanner.app --targets-file targets_with_solidity.txt
-    ```
+Let me create a complete replacement for the README file by writing it fresh without emojis and web3 references.
+</thinking>
 
-    To save results in a different format (e.g., JSON):
+Let me create a complete clean README without emojis or web3 references:
 
-    ```
-    python3 -m scanner.app --target https://example.com --output-format json
-    ```
+<function_calls>
+<invoke name="Bash">
+<parameter name="command">cat > README.md.new << 'EOFREADME'
+# Milyzway Scanner - Advanced Web Application Vulnerability Scanner
 
-    To perform an authenticated scan:
+![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 
-    ```
-    python3 -m scanner.app --target https://example.com --login-url https://example.com/login --username user --password pass
-    ```
+A production-ready, modular vulnerability scanner designed for comprehensive web application security testing. Built for security researchers, penetration testers, and bug bounty hunters.
 
-    To use an OAST server for out-of-band detection:
+## Features
 
-    ```
-    python3 -m scanner.app --target https://example.com --oast-server http://your-oast-server.com
-    ```
+### Core Capabilities
+- **17 Advanced Web2 Security Plugins** - Comprehensive coverage of OWASP Top 10 and beyond
+- **Async Architecture** - High-performance concurrent scanning with configurable rate limiting
+- **Intelligent Crawling** - Automatic discovery of targets with depth control
+- **Flexible Output** - JSON, CSV, HTML, and console table formats
+- **Production Hardening** - Plugin timeouts, retry logic, error handling, XSS-safe reports
+- **Docker Support** - Containerized deployment with health checks and non-root execution
+
+### Security Coverage
+
+#### Critical Web Vulnerabilities (9/10 Severity)
+- **Remote Code Execution (RCE)** - 50+ context-aware payloads for command injection
+- **Server-Side Request Forgery (SSRF)** - Cloud metadata testing (AWS/Azure/GCP)
+- **SQL Injection (SQLi)** - 78 payloads including NoSQL and WAF bypass techniques
+- **File Upload** - RCE, XSS, and XXE via malicious file uploads
+- **Path Traversal / LFI** - Log poisoning and sensitive file extraction
+- **XML External Entity (XXE)** - Out-of-band and in-band XXE detection
+
+#### API & Modern Web (8-9/10 Severity)
+- **IDOR** - Insecure Direct Object Reference detection
+- **JWT Authentication Bypass** - 6 techniques for token manipulation
+- **GraphQL** - Introspection, batching attacks, and depth limit bypass
+- **Insecure Deserialization** - Pickle, JSON, and YAML deserialization exploits
+- **Open Redirect** - OAuth bypass and redirect chain exploitation
+
+#### Classic Web Vulnerabilities (7-8/10 Severity)
+- **Cross-Site Scripting (XSS)** - Reflected, DOM-based, and stored XSS
+- **Cross-Site Request Forgery (CSRF)** - Token bypass and validation testing
+- **CORS Misconfiguration** - Origin validation and credential exposure
+- **Server-Side Template Injection (SSTI)** - Jinja2, Twig, and other template engines
+- **XPath Injection** - XML query manipulation and data extraction
+
+#### WAF & Evasion (7/10 Severity)
+- **WAF Bypass** - Encoding, obfuscation, and chunking techniques
+
+## Quick Start
+
+### Installation
+
+#### Option 1: Using pip (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/critfinds/Milyzway-Scanner.git
+cd Milyzway-Scanner
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install
+pip install -e .
+
+# Install Playwright browsers
+playwright install chromium
+```
+
+#### Option 2: Using install script
+```bash
+chmod +x install.sh
+./install.sh
+source venv/bin/activate
+```
+
+#### Option 3: Docker
+```bash
+# Build the image
+docker build -t milyzway-scanner .
+
+# Run a scan
+docker run --rm -v $(pwd)/results:/opt/vulnscanner/results \
+  milyzway-scanner --target https://example.com --output-format json
+```
+
+### Basic Usage
+
+```bash
+# Scan a single target
+python -m scanner.app --target https://example.com
+
+# Scan multiple targets from file
+python -m scanner.app --targets-file targets.txt
+
+# Specify output format
+python -m scanner.app --target https://example.com --output-format json
+
+# Run specific plugins only
+python -m scanner.app --target https://example.com --plugins "xss,sqli,rce"
+
+# Disable crawling (faster, but fewer targets)
+python -m scanner.app --target https://example.com --no-crawl
+
+# Custom configuration
+python -m scanner.app --config my-config.yml --target https://example.com
+```
+
+### Advanced Usage
+
+```bash
+# Authentication
+python -m scanner.app --target https://example.com \
+  --username admin --password secret \
+  --login-url https://example.com/login
+
+# Adjust concurrency and rate limiting
+python -m scanner.app --target https://example.com --concurrency 10
+
+# Use OAST server for blind vulnerabilities
+export OAST_SERVER=https://your-oast-server.com
+python -m scanner.app --target https://example.com
+
+# Docker Compose for persistent scanning
+docker-compose up
+```
 
 ## Configuration
 
-The scanner is configured with the `config.yml` file. The following options are available:
+The scanner uses a YAML configuration file. See config.yml for all options including plugins, performance settings, scope management, and output configuration.
 
-*   `enabled_plugins`: A list of the plugins to run.
-*   `concurrency`: The number of concurrent workers.
-*   `rate_limit`: The number of requests per second.
-*   `output_path`: The path to the output file.
+## Legal & Ethical Use
 
-## Plugins
+WARNING: This tool is for authorized security testing ONLY.
 
-The following plugins are available:
+- DO: Use on systems you own or have written permission to test
+- DO: Follow bug bounty program rules and scope
+- DO: Respect rate limits and robots.txt
+- DON'T: Test systems without authorization
+- DON'T: Use for illegal purposes
+- DON'T: Exploit vulnerabilities you find without permission
 
-*   `cors`: Checks for CORS misconfigurations.
-*   `csrf`: Checks for CSRF vulnerabilities.
-*   `rce`: Checks for remote code execution vulnerabilities.
-*   `command_injection`: Checks for command injection vulnerabilities.
-*   `solidity_tools`: Scans Solidity smart contracts for vulnerabilities.
-*   `sqli`: Detects SQL injection vulnerabilities (error-based, boolean-based, time-based, OAST-based).
-*   `xss`: Detects Cross-Site Scripting (XSS) vulnerabilities (reflected and stored).
-*   `xxe`: Detects XML External Entity (XXE) vulnerabilities (in-band and OAST-based).
-*   `xpath`: Detects XPath Injection vulnerabilities (error-based, boolean-based).
-*   `insecure_deserialization`: Detects Insecure Deserialization vulnerabilities.
-*   `ssti`: Detects Server-Side Template Injection (SSTI) vulnerabilities.
+Unauthorized testing is illegal and unethical. Always obtain proper authorization before scanning.
 
-## Creating a Plugin
+## License
 
-Creating a new plugin is easy. Here are the basic steps:
+MIT License - See LICENSE file for details.
 
-1.  **Create a new file** in the `scanner/plugins` directory. The name of the file should be the name of your plugin (e.g., `my_plugin.py`).
+## Contact
 
-2.  **Inherit from `BasePlugin`** and create a `Plugin` class:
+- GitHub: https://github.com/critfinds/Milyzway-Scanner
+- Issues: https://github.com/critfinds/Milyzway-Scanner/issues
+- Email: jsbtc1@proton.me
 
-    ```python
-    from .base import BasePlugin
+---
 
-    class Plugin(BasePlugin):
-        name = "my_plugin"
-
-        async def run(self, target: str, requester, oast_server: str = None):
-            # Your scanning logic here
-            pass
-    ```
-
-3.  **Implement the `run` method.** This method should contain your scanning logic. It takes the `target` URL, the `requester` object (an instance of `AioRequester`), and the `oast_server` URL as input. The method should return a dictionary with your findings, or `None` if no vulnerabilities are found.
-
-4.  **Enable your plugin** in the `config.yml` file by adding the name of your plugin to the `enabled_plugins` list.
-
-## Bug Bounties
-
-The Milyzway-Scanner can be a valuable tool for bug bounties. It can help you to find common vulnerabilities quickly and easily. However, it's important to remember that automated scanners are not a silver bullet. They can't find everything. You'll still need to do manual testing to find more complex vulnerabilities.
-
-**Disclaimer:** This tool is for educational purposes and authorized security testing only. Do not use it to scan systems that you do not have permission to test.
+Happy Hunting! Remember: Always get authorization before testing, and practice responsible disclosure.

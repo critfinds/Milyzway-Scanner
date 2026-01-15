@@ -1,4 +1,5 @@
-"""CORS misconfiguration scanner plugin (passive/safe checks).
+"""
+CORS misconfiguration scanner plugin (passive/safe checks).
 
 This plugin performs non-intrusive GET requests with crafted Origin
 headers and inspects the response headers for Access-Control-* values.
@@ -16,42 +17,41 @@ class Plugin(BasePlugin):
         "http://localhost:3000",
     ]
 
-    async def run(self, target: str, requester, oast_server: str = None) -> Dict[str, Any] | None:
+    async def run(self, target: str, requester, oast_server: str = None) -> List[Dict[str, Any]] | None:
         findings = []
         for origin in self.TEST_ORIGINS:
             headers = {"Origin": origin}
-            # Use requester.get which returns a dict {status,text,headers}
             resp = await requester.get(target, headers=headers)
             if not resp or not isinstance(resp, dict):
                 continue
+
             resp_headers = {k.lower(): v for k, v in (resp.get("headers") or {}).items()}
             acao = resp_headers.get("access-control-allow-origin")
             acac = resp_headers.get("access-control-allow-credentials")
 
-            if acao:
-                if acao == "*":
-                    findings.append({
-                        "type": "wildcard_no_credentials",
-                        "origin_tested": origin,
-                        "acao": acao,
-                        "note": "Access-Control-Allow-Origin is '*' (credentials are not sent by browsers in this case).",
-                    })
-                elif acao == origin:
-                    findings.append({
-                        "type": "reflected_origin_allowed",
-                        "origin_tested": origin,
-                        "acao": acao,
-                        "acac": acac,
-                        "note": "Server reflects the Origin header in Access-Control-Allow-Origin.",
-                    })
-                else:
-                    findings.append({
-                        "type": "specific_origin_allowed",
-                        "origin_tested": origin,
-                        "acao": acao,
-                        "acac": acac,
-                    })
+            # Report ACAO=* without credentials
+            if acao == "*" and (not acac or acac.lower() != "true"):
+                findings.append({
+                    "type": "wildcard_no_credentials",
+                    "origin_tested": origin,
+                    "acao": acao,
+                    "acac": acac,
+                    "note": "Wildcard ACAO without credentials.",
+                    "severity": "low",
+                    "confidence": "firm",
+                })
+                continue
 
-        if findings:
-            return {"cors_findings": findings}
-        return None
+            # Report reflected origins or ACAO with credentials
+            if acao:
+                findings.append({
+                    "type": "potentially_exploitable",
+                    "origin_tested": origin,
+                    "acao": acao,
+                    "acac": acac,
+                    "note": "Reflected ACAO or ACAO with credentials — review for possible CORS abuse.",
+                    "severity": "medium",
+                    "confidence": "tentative",
+                })
+
+        return findings

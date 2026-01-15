@@ -20,11 +20,11 @@ dependencies = [
     "rich",
     "playwright",
     "PyYAML",
-    "mythril",
-    "slither-analyzer",
     "beautifulsoup4",
+    "python-dotenv",
+    "pydantic>=2.0.0",
 ]
-urls = {Homepage = "https://github.com/your-username/milyzway-scanner"}
+urls = {Homepage = "https://github.com/critfinds/Milyzway-Scanner"}
 
 [project.scripts]
 milyzway-scanner = "scanner.app:main"
