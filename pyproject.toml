@@ -24,7 +24,11 @@ dependencies = [
     "python-dotenv",
     "pydantic>=2.0.0",
 ]
+<<<<<<< HEAD
 urls = {Homepage = "https://github.com/critfinds/Milyzway-Scanner"}
+=======
+urls = {Homepage = "https://github.com/critfinds/milyzway-scanner"}
+>>>>>>> origin/main
 
 [project.scripts]
 milyzway-scanner = "scanner.app:main"

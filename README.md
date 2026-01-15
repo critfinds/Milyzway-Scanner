@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Milyzway Scanner - Advanced Web Application Vulnerability Scanner
 
 ![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)
@@ -5,6 +6,13 @@
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 
 A production-ready, modular vulnerability scanner designed for comprehensive web application security testing. Built for security researchers, penetration testers, and bug bounty hunters.
+=======
+# Milyzway-Scanner
+![milyzwaylogo.png](/milyzwaylogo.png)
+
+
+A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
+>>>>>>> origin/main
 
 ## Features
 
