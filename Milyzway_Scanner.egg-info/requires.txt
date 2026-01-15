@@ -1,7 +1,0 @@
-aiohttp
-rich
-playwright
-PyYAML
-beautifulsoup4
-python-dotenv
-pydantic>=2.0.0
