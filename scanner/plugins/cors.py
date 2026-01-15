@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 CORS misconfiguration scanner plugin (passive/safe checks).
 
