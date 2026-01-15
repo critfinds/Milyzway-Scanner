@@ -10,7 +10,7 @@ A production-ready, modular vulnerability scanner designed for comprehensive web
 ![milyzwaylogo.png](/milyzwayscanner.jpg)
 
 
-A modular, asynchronous vulnerability scanner for web applications and smart contracts, now with enhanced detection capabilities and a more interactive CLI.
+A modular, asynchronous vulnerability scanner for web applications now with enhanced detection capabilities and a more interactive CLI.
 
 ## Features
 
