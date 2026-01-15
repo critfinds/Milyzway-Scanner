@@ -4,8 +4,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 
-# Milyzway-Scanner
-![milyzwaylogo.png](/milyzwayscanner.jpg)
+<img src="/milyzwayscanner.jpg" alt="milyzwaylogo" width="100">
 
 
 A modular, asynchronous vulnerability scanner for web applications now with enhanced detection capabilities and a more interactive CLI.
